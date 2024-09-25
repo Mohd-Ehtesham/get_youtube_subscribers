@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
+const mongoose = require("mongoose");
 const Subscriber = require("./modals/getSubscribersSchema");
 
 const app = express();
@@ -64,6 +65,12 @@ app.get("/subscribers/names", async (req, res, next) => {
 //  GET /subscribers/:id - Responds with a specific subscriber by id
 app.get("/subscribers/:id", async (req, res, next) => {
   const id = req.params.id; // Keep ID as a string to match MongoDB's ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      status: "fail",
+      message: `Invalid ID format: "${id}".`,
+    });
+  }
   try {
     // Use Mongoose to find the subscriber by MongoDB's ObjectId
     const subscriber = await Subscriber.findById(id);
@@ -142,7 +149,10 @@ app.delete("/subscribers/:id", async (req, res) => {
 
 app.use((error, request, response, next) => {
   const status = error.status || 500; // Default to 500 if error doesn't have a status code
-  response.status(status).send(`Error Message: ${error.message}`);
+  response.status(status).json({
+    status: "error",
+    message: error.message,
+  });
 });
 
 module.exports = { app, insertDefaultData };
